@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yale Endowment Model — Multigenerational Wealth Calculator</title>
+
+  <!-- Google Fonts: Inter & Playfair Display for Editorial Institutional Look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js for Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tailwind Custom Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            yale: {
+              DEFAULT: '#00356B',
+              dark: '#002244',
+              light: '#286DC0',
+              muted: '#E6EEF8',
+            },
+            ivory: '#F8FAFC',
+            gold: {
+              DEFAULT: '#B45309',
+              light: '#D97706',
+              pale: '#FEF3C7',
+            },
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Custom Subtle Scrollbars and Range Slider Styling */
+    body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #CBD5E1;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -5px;
+      background-color: #00356B;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      transition: transform 0.1s ease, background-color 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background-color: #286DC0;
+      transform: scale(1.12);
+    }
+
+    input[type="range"]:focus {
+      outline: none;
+    }
+
+    /* Smooth Tab & Card Transitions */
+    .institutional-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+      border-radius: 0.75rem;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Institutional Header -->
+  <header class="bg-[#00356B] text-white border-b border-[#002244] sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <!-- Crest / Emblem SVG -->
+        <div class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6 text-amber-300" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3L2 8l10 5 10-5-10-5zM2 13l10 5 10-5M2 18l10 5 10-5" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-serif text-lg sm:text-xl font-bold tracking-tight text-white">
+              Yale Endowment Model
+            </h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
+              Swensen Framework
+            </span>
+          </div>
+          <p class="text-xs text-slate-300">
+            Multigenerational Wealth Preservation, Illiquidity Capture &amp; Hybrid Spending Simulator
+          </p>
+        </div>
+      </div>
+
+      <!-- Global Display Controls (Real vs Nominal & Export/Reset) -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <!-- Real vs Nominal Toggle -->
+        <div class="inline-flex rounded-lg bg-[#002244] p-1 border border-white/15" role="group">
+          <button
+            id="btn-real"
+            type="button"
+            onclick="setCurrencyMode('real')"
+            class="px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-white text-[#00356B] shadow-sm"
+          >
+            Real (Today's $)
+          </button>
+          <button
+            id="btn-nominal"
+            type="button"
+            onclick="setCurrencyMode('nominal')"
+            class="px-3 py-1.5 text-xs font-medium rounded-md transition-all text-slate-300 hover:text-white"
+          >
+            Nominal $
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onclick="resetToPreset()"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors"
+          title="Restore active preset defaults"
+        >
+          Reset Defaults
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- Strategy Preset Banner & Selector -->
+    <section class="institutional-card p-4 sm:p-5 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-l-4 border-l-[#00356B]">
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-[#B45309] mb-1">
+          Portfolio Architecture Preset
+        </div>
+        <h2 id="preset-title" class="text-base sm:text-lg font-semibold text-slate-900">
+          Institutional Yale Model (Modern Endowment)
+        </h2>
+        <p id="preset-desc" class="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-3xl">
+          Pioneered by David Swensen: minimizes low-yielding fixed income and maximizes equity-oriented illiquid alternatives (Private Equity, Venture Capital, Absolute Return, and Real Assets) to harvest the long-term illiquidity premium.
+        </p>
+      </div>
+
+      <!-- Preset Switcher Buttons -->
+      <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+        <button
+          id="preset-institutional"
+          type="button"
+          onclick="applyPreset('institutional')"
+          class="px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all border text-left sm:text-center bg-[#00356B] text-white border-[#00356B] shadow-sm"
+        >
+          <div>Institutional Endowment</div>
+          <div class="text-[11px] font-normal opacity-85">Heavy Alternatives &amp; PE</div>
+        </button>
+
+        <button
+          id="preset-retail"
+          type="button"
+          onclick="applyPreset('retail')"
+          class="px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all border text-left sm:text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+        >
+          <div>Swensen Retail / ETF Model</div>
+          <div class="text-[11px] font-normal text-slate-500">Liquid Individual Portfolio</div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Primary Grid: Left Controls (4 cols) | Right Analytics & Charts (8 cols) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- LEFT COLUMN: Parameters & Asset Allocation -->
+      <div class="lg:col-span-5 xl:col-span-4 space-y-6">
+
+        <!-- Card 1: Capital & Multigenerational Horizon -->
+        <div class="institutional-card p-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[#00356B]">
+              1. Capital &amp; Generational Horizon
+            </h3>
+            <span id="gen-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-amber-50 text-[#B45309] border border-amber-200">
+              3 Generations
+            </span>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Starting Principal -->
+            <div>
+              <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                <label for="input-principal">Starting Endowment Principal</label>
+                <span id="label-principal" class="font-semibold text-[#00356B] tabular-nums">$10,000,000</span>
+              </div>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm">$</span>
+                <input
+                  id="input-principal"
+                  type="number"
+                  min="10000"
+                  max="10000000000"
+                  step="100000"
+                  value="10000000"
+                  oninput="handleParamChange()"
+                  class="w-full pl-7 pr-3 py-2 text-sm font-medium border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00356B]/20 focus:border-[#00356B] tabular-nums"
+                />
+              </div>
+              <!-- Quick Principal Pills -->
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <button type="button" onclick="setPrincipal(500000)" class="px-2 py-0.5 text-[11px] rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium">$500K</button>
+                <button type="button" onclick="setPrincipal(2500000)" class="px-2 py-0.5 text-[11px] rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium">$2.5M</button>
+                <button type="button" onclick="setPrincipal(10000000)" class="px-2 py-0.5 text-[11px] rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium">$10M</button>
+                <button type="button" onclick="setPrincipal(50000000)" class="px-2 py-0.5 text-[11px] rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium">$50M</button>
+                <button type="button" onclick="setPrincipal(250000000)" class="px-2 py-0.5 text-[11px] rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium">$250M</button>
+              </div>
+            </div>
+
+            <!-- Annual Contribution (Gen 1 Accumulation) -->
+            <div>
+              <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                <label for="input-contribution">Annual Contribution (Gen 1)</label>
+                <span id="label-contribution" class="font-semibold text-slate-700 tabular-nums">$0 / yr</span>
+              </div>
+              <div class="grid grid-cols-12 gap-2">
+                <div class="col-span-7 relative">
+                  <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm">$</span>
+                  <input
+                    id="input-contribution"
+                    type="number"
+                    min="0"
+                    max="100000000"
+                    step="10000"
+                    value="0"
+                    oninput="handleParamChange()"
+                    class="w-full pl-7 pr-2 py-1.5 text-sm font-medium border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00356B]/20 focus:border-[#00356B] tabular-nums"
+                  />
+                </div>
+                <div class="col-span-5">
+                  <select
+                    id="input-contrib-years"
+                    onchange="handleParamChange()"
+                    title="Years of active contributions"
+                    class="w-full px-2 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-[#00356B]"
+                  >
+                    <option value="10">For 10 Yrs</option>
+                    <option value="20" selected>For 20 Yrs</option>
+                    <option value="25">For 25 Yrs</option>
+                    <option value="100">All Years</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Time Horizon Slider -->
+            <div>
+              <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                <label for="slider-years">Multigenerational Horizon</label>
+                <span id="label-years" class="font-bold text-[#00356B] tabular-nums">75 Years</span>
+              </div>
+              <input
+                id="slider-years"
+                type="range"
+                min="10"
+                max="100"
+                step="5"
+                value="75"
+                oninput="handleParamChange()"
+                class="w-full"
+              />
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>10y</span>
+                <span>25y (Gen 1)</span>
+                <span>50y (Gen 2)</span>
+                <span>75y (Gen 3)</span>
+                <span>100y (Gen 4)</span>
+              </div>
+            </div>
+
+            <!-- Inflation & Fee Drag Row -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                  <label for="slider-inflation">Inflation</label>
+                  <span id="label-inflation" class="font-semibold text-slate-800 tabular-nums">2.5%</span>
+                </div>
+                <input
+                  id="slider-inflation"
+                  type="range"
+                  min="0"
+                  max="8"
+                  step="0.1"
+                  value="2.5"
+                  oninput="handleParamChange()"
+                  class="w-full"
+                />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                  <label for="slider-drag" title="Annual tax drag, family office overhead, or manager fee drag">Fee / Tax Drag</label>
+                  <span id="label-drag" class="font-semibold text-slate-800 tabular-nums">0.35%</span>
+                </div>
+                <input
+                  id="slider-drag"
+                  type="range"
+                  min="0"
+                  max="3.0"
+                  step="0.05"
+                  value="0.35"
+                  oninput="handleParamChange()"
+                  class="w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Yale Endowment Spending Rule -->
+        <div class="institutional-card p-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[#00356B]">
+              2. Endowment Spending Policy
+            </h3>
+            <span class="text-[11px] font-medium text-slate-500">Distribution Engine</span>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Spending Rule Mode -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Distribution Rule Formula</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  id="rule-yale"
+                  type="button"
+                  onclick="setSpendingRule('yale')"
+                  class="p-2.5 rounded-lg border text-left transition-all bg-[#00356B]/5 border-[#00356B] text-[#00356B]"
+                >
+                  <div class="text-xs font-bold">Yale Hybrid Rule</div>
+                  <div class="text-[10px] text-slate-600 mt-0.5">80% Prior + 20% Market</div>
+                </button>
+                <button
+                  id="rule-fixed"
+                  type="button"
+                  onclick="setSpendingRule('fixed')"
+                  class="p-2.5 rounded-lg border text-left transition-all bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  <div class="text-xs font-bold">Fixed % of Portfolio</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">Volatile annual payout</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Target Long-Term Spending Rate -->
+            <div>
+              <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                <label for="slider-spending">Target Spending Rate</label>
+                <span id="label-spending" class="font-bold text-[#B45309] tabular-nums">4.75%</span>
+              </div>
+              <input
+                id="slider-spending"
+                type="range"
+                min="0"
+                max="10"
+                step="0.25"
+                value="4.75"
+                oninput="handleParamChange()"
+                class="w-full"
+              />
+              <p class="text-[11px] text-slate-500 mt-1">
+                Yale's long-term target spending policy typically ranges between <strong>4.50% and 5.25%</strong> of endowment value.
+              </p>
+            </div>
+
+            <!-- Smoothing Weight (Only shown when Yale Hybrid Rule active) -->
+            <div id="smoothing-control-box" class="bg-slate-50 p-3 rounded-lg border border-slate-200/80">
+              <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                <label for="slider-smoothing">Prior-Year Inertia Weight</label>
+                <span id="label-smoothing" class="font-semibold text-[#00356B] tabular-nums">80% Inertia / 20% Market</span>
+              </div>
+              <input
+                id="slider-smoothing"
+                type="range"
+                min="50"
+                max="95"
+                step="5"
+                value="80"
+                oninput="handleParamChange()"
+                class="w-full"
+              />
+              <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                <strong>Formula:</strong> <span class="font-mono text-[10px] text-slate-700">D<sub>t</sub> = w·(D<sub>t-1</sub>·(1+i)) + (1-w)·(r<sub>spend</sub>·V<sub>t</sub>)</span>. Smooths family/foundation income against market crashes.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Asset Allocation & Return Assumptions -->
+        <div class="institutional-card p-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+            <div>
+              <h3 class="text-sm font-bold uppercase tracking-wider text-[#00356B]">
+                3. Asset Allocation &amp; Returns
+              </h3>
+              <p class="text-[11px] text-slate-500">Adjust weights &amp; nominal expected returns</p>
+            </div>
+
+            <!-- Allocation Sum Badge & Auto-Normalize -->
+            <div class="flex flex-col items-end gap-1">
+              <span
+                id="allocation-total-badge"
+                class="px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums bg-emerald-50 text-emerald-700 border border-emerald-200"
+              >
+                Total: 100%
+              </span>
+              <button
+                id="btn-normalize"
+                type="button"
+                onclick="normalizeAllocations()"
+                class="hidden text-[11px] font-semibold text-[#00356B] hover:underline"
+              >
+                Auto-Balance to 100%
+              </button>
+            </div>
+          </div>
+
+          <!-- Warning Banner if != 100% -->
+          <div id="allocation-warning" class="hidden mb-3 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between gap-2">
+            <span>Weights must sum to 100% for accurate simulation.</span>
+            <button
+              type="button"
+              onclick="normalizeAllocations()"
+              class="px-2.5 py-1 bg-amber-600 text-white rounded text-[11px] font-semibold hover:bg-amber-700 shrink-0"
+            >
+              Normalize
+            </button>
+          </div>
+
+          <!-- Dynamic Asset Class Sliders List -->
+          <div id="asset-class-list" class="space-y-3.5">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: KPIs, Charts & Generational Ledger -->
+      <div class="lg:col-span-7 xl:col-span-8 space-y-6">
+
+        <!-- KPI Summary Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <!-- KPI 1: Ending Multigenerational Wealth -->
+          <div class="institutional-card p-4 border-t-4 border-t-[#00356B]">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Ending Endowment
+              </span>
+              <span id="kpi-horizon-tag" class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                Yr 75
+              </span>
+            </div>
+            <div id="kpi-ending-wealth" class="text-xl sm:text-2xl font-bold text-[#00356B] mt-1.5 tabular-nums">
+              $0
+            </div>
+            <div id="kpi-ending-sub" class="text-[11px] text-slate-500 mt-1 tabular-nums">
+              Nominal: $0
+            </div>
+          </div>
+
+          <!-- KPI 2: Cumulative Distributions Paid -->
+          <div class="institutional-card p-4 border-t-4 border-t-[#B45309]">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Cumulative Payouts
+              </span>
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-[#B45309]">
+                Family Income
+              </span>
+            </div>
+            <div id="kpi-total-distributions" class="text-xl sm:text-2xl font-bold text-slate-900 mt-1.5 tabular-nums">
+              $0
+            </div>
+            <div id="kpi-final-distribution" class="text-[11px] text-slate-500 mt-1 tabular-nums">
+              Yr 75 Payout: $0/yr
+            </div>
+          </div>
+
+          <!-- KPI 3: Blended Expected Return & Volatility -->
+          <div class="institutional-card p-4 border-t-4 border-t-emerald-600">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Expected Return
+              </span>
+              <span id="kpi-real-return" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 tabular-nums">
+                +0.0% Real
+              </span>
+            </div>
+            <div id="kpi-nominal-return" class="text-xl sm:text-2xl font-bold text-slate-900 mt-1.5 tabular-nums">
+              0.00%
+            </div>
+            <div id="kpi-volatility" class="text-[11px] text-slate-500 mt-1 tabular-nums">
+              Est. Volatility: 0.0% | Sharpe: 0.00
+            </div>
+          </div>
+
+          <!-- KPI 4: Purchasing Power Preservation Ratio -->
+          <div class="institutional-card p-4 border-t-4 border-t-indigo-600">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Purchasing Power
+              </span>
+              <span id="kpi-status-badge" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                Perpetual
+              </span>
+            </div>
+            <div id="kpi-preservation-ratio" class="text-xl sm:text-2xl font-bold text-slate-900 mt-1.5 tabular-nums">
+              0.00x
+            </div>
+            <div id="kpi-alpha-vs-6040" class="text-[11px] text-emerald-700 font-medium mt-1 tabular-nums">
+              +$0 vs. 60/40 Benchmark
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Chart: Multigenerational Trajectory & Benchmark Comparison -->
+        <div class="institutional-card p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">
+                Multigenerational Capital Trajectory vs. 60/40 Benchmark
+              </h3>
+              <p class="text-xs text-slate-500">
+                Compounding endowment value after annual distributions, inflation, and fee drag across generational milestones
+              </p>
+            </div>
+
+            <!-- Chart View Toggle -->
+            <div class="inline-flex rounded-lg bg-slate-100 p-1 self-start sm:self-auto">
+              <button
+                id="chart-tab-wealth"
+                type="button"
+                onclick="setChartView('wealth')"
+                class="px-3 py-1 text-xs font-semibold rounded-md bg-white text-[#00356B] shadow-sm transition-all"
+              >
+                Endowment Value
+              </button>
+              <button
+                id="chart-tab-income"
+                type="button"
+                onclick="setChartView('income')"
+                class="px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition-all"
+              >
+                Annual Distributions
+              </button>
+              <button
+                id="chart-tab-total"
+                type="button"
+                onclick="setChartView('total')"
+                class="px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition-all"
+              >
+                Total Value Created
+              </button>
+            </div>
+          </div>
+
+          <!-- Chart Container -->
+          <div class="relative w-full h-[320px] sm:h-[360px]">
+            <canvas id="trajectoryChart"></canvas>
+          </div>
+
+          <!-- Generational Milestone Strip -->
+          <div id="milestone-strip" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Secondary Row: Allocation vs Return Contribution & Spending Rule Mechanics -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <!-- Donut Chart: Capital Weight -->
+          <div class="md:col-span-5 institutional-card p-5 flex flex-col">
+            <h3 class="text-sm font-bold text-slate-900 mb-1">
+              Portfolio Capital Allocation
+            </h3>
+            <p class="text-xs text-slate-500 mb-3">
+              Target weight across asset classes
+            </p>
+            <div class="relative flex-1 min-h-[220px] flex items-center justify-center">
+              <canvas id="allocationDonutChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Horizontal Bar Chart: Return Attribution by Asset Class -->
+          <div class="md:col-span-7 institutional-card p-5 flex flex-col">
+            <div class="flex items-center justify-between mb-1">
+              <h3 class="text-sm font-bold text-slate-900">
+                Expected Return Contribution (bps)
+              </h3>
+              <span id="total-attribution-label" class="text-xs font-semibold text-[#00356B] tabular-nums">
+                Gross: 0.00%
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">
+              Weighted contribution of each asset class to total portfolio return
+            </p>
+            <div class="relative flex-1 min-h-[220px]">
+              <canvas id="attributionBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generational Milestone Ledger Table -->
+        <div class="institutional-card overflow-hidden">
+          <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">
+                Generational Ledger &amp; Distribution Schedule
+              </h3>
+              <p class="text-xs text-slate-500">
+                Tracking intergenerational capital preservation and sustainable family cash flows
+              </p>
+            </div>
+            <div class="inline-flex rounded-lg bg-slate-100 p-1 self-start sm:self-auto">
+              <button
+                id="table-mode-milestones"
+                type="button"
+                onclick="setTableMode('milestones')"
+                class="px-2.5 py-1 text-xs font-semibold rounded-md bg-white text-[#00356B] shadow-sm"
+              >
+                5-Year &amp; Gen Milestones
+              </button>
+              <button
+                id="table-mode-annual"
+                type="button"
+                onclick="setTableMode('annual')"
+                class="px-2.5 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900"
+              >
+                All Years
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-[420px]">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th class="py-3 px-4">Year / Generation</th>
+                  <th class="py-3 px-4 text-right">Starting Balance</th>
+                  <th class="py-3 px-4 text-right">Net Inv. Return</th>
+                  <th class="py-3 px-4 text-right">Annual Payout</th>
+                  <th class="py-3 px-4 text-right">Ending Balance</th>
+                  <th class="py-3 px-4 text-right">60/40 Benchmark</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-table-body" class="divide-y divide-slate-100 text-xs sm:text-sm tabular-nums">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Institutional Methodology Note -->
+        <footer class="bg-slate-100/80 border border-slate-200/80 rounded-xl p-4 text-xs text-slate-600 leading-relaxed">
+          <div class="font-semibold text-slate-800 mb-1">Institutional Methodology &amp; Swensen Principles</div>
+          <p>
+            <strong>1. Equity Bias &amp; Illiquidity Premium:</strong> The Institutional Yale Model allocates heavily to private equity, venture capital, and real assets where active management dispersion and illiquidity premiums historically generate superior real compounding over multi-decade horizons.
+            <strong class="ml-1">2. Hybrid Spending Rule:</strong> To prevent dramatic lifestyle or budgetary cuts during equity bear markets while still capturing long-term growth, Yale calculates annual distributions as a weighted blend (typically 80%) of the prior year's inflation-adjusted distribution plus (20%) of the target spending rate applied to current endowment market value.
+            <strong class="ml-1">3. Benchmark Comparison:</strong> Compared against a traditional 60% Global Equities / 40% Aggregate Bonds portfolio (7.2% nominal expected return, 10.5% volatility) subject to the exact same spending rule and inflation assumptions.
+          </p>
+        </footer>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    // =========================================================================
+    // 1. PRESET DEFINITIONS & ASSET CLASS DATA
+    // =========================================================================
+    const PRESETS = {
+      institutional: {
+        name: 'Institutional Yale Model (Modern Endowment)',
+        description:
+          'Pioneered by David Swensen: minimizes low-yielding fixed income and maximizes equity-oriented illiquid alternatives (Private Equity/VC, Absolute Return, and Real Assets) to harvest the long-term illiquidity premium.',
+        defaultDrag: 0.35,
+        defaultSpending: 4.75,
+        assets: [
+          {
+            id: 'pe_vc',
+            name: 'Private Equity & Venture Capital',
+            shortName: 'Private Equity / VC',
+            weight: 33,
+            expectedReturn: 12.2,
+            volatility: 19.5,
+            color: '#00356B',
+          },
+          {
+            id: 'abs_return',
+            name: 'Absolute Return / Hedge Funds',
+            shortName: 'Absolute Return',
+            weight: 21,
+            expectedReturn: 8.2,
+            volatility: 8.5,
+            color: '#286DC0',
+          },
+          {
+            id: 'real_assets',
+            name: 'Real Assets (Real Estate, Timber, Energy)',
+            shortName: 'Real Assets',
+            weight: 15,
+            expectedReturn: 8.8,
+            volatility: 13.0,
+            color: '#B45309',
+          },
+          {
+            id: 'dom_eq',
+            name: 'Domestic Public Equities',
+            shortName: 'Domestic Equities',
+            weight: 13,
+            expectedReturn: 8.5,
+            volatility: 16.0,
+            color: '#0D9488',
+          },
+          {
+            id: 'intl_eq',
+            name: 'International & Emerging Equities',
+            shortName: 'Intl / EM Equities',
+            weight: 6,
+            expectedReturn: 9.0,
+            volatility: 18.0,
+            color: '#6366F1',
+          },
+          {
+            id: 'fixed_inc',
+            name: 'Fixed Income / Sovereign Bonds',
+            shortName: 'Fixed Income',
+            weight: 3,
+            expectedReturn: 4.4,
+            volatility: 5.5,
+            color: '#64748B',
+          },
+          {
+            id: 'cash_liq',
+            name: 'Cash & Liquidity Reserve',
+            shortName: 'Cash / Liquidity',
+            weight: 9,
+            expectedReturn: 3.8,
+            volatility: 1.2,
+            color: '#94A3B8',
+          },
+        ],
+      },
+      retail: {
+        name: 'David Swensen Retail / Individual Investor Model',
+        description:
+          'Adapted from Swensen’s "Unconventional Success" for individual families without access to top-decile private equity funds: uses low-cost, liquid index ETFs across domestic equities, REITs, international equities, and Treasury/TIPS inflation protection.',
+        defaultDrag: 0.15,
+        defaultSpending: 4.25,
+        assets: [
+          {
+            id: 'dom_total',
+            name: 'Total Domestic Stock Market (VTI)',
+            shortName: 'US Total Stock',
+            weight: 30,
+            expectedReturn: 8.5,
+            volatility: 16.0,
+            color: '#00356B',
+          },
+          {
+            id: 'reits',
+            name: 'Real Estate Investment Trusts (REITs)',
+            shortName: 'REITs / Real Estate',
+            weight: 20,
+            expectedReturn: 8.0,
+            volatility: 17.5,
+            color: '#B45309',
+          },
+          {
+            id: 'intl_dev',
+            name: 'International Developed Equities',
+            shortName: 'Intl Developed',
+            weight: 15,
+            expectedReturn: 8.2,
+            volatility: 16.5,
+            color: '#286DC0',
+          },
+          {
+            id: 'tips',
+            name: 'Treasury Inflation-Protected (TIPS)',
+            shortName: 'TIPS (Inflation)',
+            weight: 15,
+            expectedReturn: 4.3,
+            volatility: 6.0,
+            color: '#0D9488',
+          },
+          {
+            id: 'treasuries',
+            name: 'Intermediate U.S. Treasury Bonds',
+            shortName: 'U.S. Treasuries',
+            weight: 15,
+            expectedReturn: 4.2,
+            volatility: 5.5,
+            color: '#64748B',
+          },
+          {
+            id: 'em_eq',
+            name: 'Emerging Markets Equities',
+            shortName: 'Emerging Markets',
+            weight: 5,
+            expectedReturn: 9.4,
+            volatility: 21.0,
+            color: '#6366F1',
+          },
+        ],
+      },
+    };
+
+    // =========================================================================
+    // 2. APPLICATION STATE
+    // =========================================================================
+    let state = {
+      activePreset: 'institutional',
+      currencyMode: 'real', // 'real' | 'nominal'
+      spendingRule: 'yale', // 'yale' | 'fixed'
+      chartView: 'wealth', // 'wealth' | 'income' | 'total'
+      tableMode: 'milestones', // 'milestones' | 'annual'
+      principal: 10000000,
+      annualContribution: 0,
+      contributionYears: 20,
+      years: 75,
+      inflation: 2.5,
+      feeDrag: 0.35,
+      spendingRate: 4.75,
+      smoothingWeight: 80,
+      assets: JSON.parse(JSON.stringify(PRESETS.institutional.assets)),
+    };
+
+    // Chart.js Instances
+    let trajectoryChart = null;
+    let allocationDonutChart = null;
+    let attributionBarChart = null;
+
+    // =========================================================================
+    // 3. FORMATTING UTILITIES
+    // =========================================================================
+    function formatCurrency(val, compact = false) {
+      if (!isFinite(val)) return '$0';
+      const absVal = Math.abs(val);
+      const sign = val < 0 ? '-' : '';
+
+      if (compact) {
+        if (absVal >= 1e12) return `${sign}$${(absVal / 1e12).toFixed(2)}T`;
+        if (absVal >= 1e9) return `${sign}$${(absVal / 1e9).toFixed(2)}B`;
+        if (absVal >= 1e6) return `${sign}$${(absVal / 1e6).toFixed(2)}M`;
+        if (absVal >= 1e3) return `${sign}$${(absVal / 1e3).toFixed(0)}K`;
+        return `${sign}$${absVal.toFixed(0)}`;
+      }
+
+      if (absVal >= 1e9) {
+        return `${sign}$${(absVal / 1e9).toFixed(2)}B`;
+      }
+      if (absVal >= 1e6) {
+        return `${sign}$${(absVal / 1e6).toFixed(2)}M`;
+      }
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(val);
+    }
+
+    function getGenerationLabel(year) {
+      if (year === 0) return 'Inception (Gen 1)';
+      if (year <= 25) return 'Gen 1 (Founders)';
+      if (year <= 50) return 'Gen 2 (Children)';
+      if (year <= 75) return 'Gen 3 (Grandchildren)';
+      return 'Gen 4 (Great-Grandchildren)';
+    }
+
+    // =========================================================================
+    // 4. UI RENDERING FOR ASSET ALLOCATION CONTROLS
+    // =========================================================================
+    function renderAssetControls() {
+      const container = document.getElementById('asset-class-list');
+      container.innerHTML = '';
+
+      state.assets.forEach((asset, index) => {
+        const row = document.createElement('div');
+        row.className = 'p-3 rounded-lg bg-slate-50/90 border border-slate-200/80 transition-colors hover:border-slate-300';
+
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${asset.color}"></span>
+              <span class="text-xs font-semibold text-slate-800 truncate" title="${asset.name}">${asset.name}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value="${asset.weight}"
+                onchange="updateAssetWeight(${index}, this.value)"
+                class="w-14 px-1.5 py-0.5 text-right text-xs font-bold text-[#00356B] bg-white border border-slate-200 rounded tabular-nums focus:outline-none focus:border-[#00356B]"
+              />
+              <span class="text-xs font-semibold text-slate-500">%</span>
+            </div>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value="${asset.weight}"
+            oninput="updateAssetWeight(${index}, this.value)"
+            class="w-full mb-2"
+          />
+
+          <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
+            <div class="flex items-center gap-1.5">
+              <span>Exp. Return:</span>
+              <input
+                type="number"
+                min="-5"
+                max="30"
+                step="0.1"
+                value="${asset.expectedReturn.toFixed(1)}"
+                onchange="updateAssetReturn(${index}, this.value)"
+                class="w-14 px-1 py-0.5 text-right font-semibold text-slate-700 bg-white border border-slate-200 rounded tabular-nums focus:outline-none focus:border-[#00356B]"
+              />
+              <span>%</span>
+            </div>
+            <div class="tabular-nums">
+              Vol: <span class="font-medium text-slate-700">${asset.volatility.toFixed(1)}%</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      updateAllocationValidationUI();
+    }
+
+    function updateAllocationValidationUI() {
+      const totalWeight = state.assets.reduce((acc, a) => acc + Number(a.weight || 0), 0);
+      const badge = document.getElementById('allocation-total-badge');
+      const warning = document.getElementById('allocation-warning');
+      const btnNorm = document.getElementById('btn-normalize');
+
+      badge.textContent = `Total: ${totalWeight.toFixed(0)}%`;
+
+      if (Math.abs(totalWeight - 100) < 0.01) {
+        badge.className =
+          'px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums bg-emerald-50 text-emerald-700 border border-emerald-200';
+        warning.classList.add('hidden');
+        btnNorm.classList.add('hidden');
+      } else {
+        badge.className =
+          'px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums bg-amber-100 text-amber-800 border border-amber-300';
+        warning.classList.remove('hidden');
+        btnNorm.classList.remove('hidden');
+      }
+    }
+
+    // =========================================================================
+    // 5. EVENT HANDLERS & STATE MUTATIONS
+    // =========================================================================
+    function applyPreset(presetKey) {
+      const preset = PRESETS[presetKey];
+      if (!preset) return;
+
+      state.activePreset = presetKey;
+      state.assets = JSON.parse(JSON.stringify(preset.assets));
+      state.feeDrag = preset.defaultDrag;
+      state.spendingRate = preset.defaultSpending;
+
+      // Update UI inputs
+      document.getElementById('slider-drag').value = state.feeDrag;
+      document.getElementById('slider-spending').value = state.spendingRate;
+
+      // Update Preset Banner Text & Button Styles
+      document.getElementById('preset-title').textContent = preset.name;
+      document.getElementById('preset-desc').textContent = preset.description;
+
+      const btnInst = document.getElementById('preset-institutional');
+      const btnRet = document.getElementById('preset-retail');
+
+      if (presetKey === 'institutional') {
+        btnInst.className =
+          'px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all border text-left sm:text-center bg-[#00356B] text-white border-[#00356B] shadow-sm';
+        btnRet.className =
+          'px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all border text-left sm:text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+      } else {
+        btnRet.className =
+          'px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all border text-left sm:text-center bg-[#00356B] text-white border-[#00356B] shadow-sm';
+        btnInst.className =
+          'px-4 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all border text-left sm:text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+      }
+
+      renderAssetControls();
+      recalculateAndRender();
+    }
+
+    function resetToPreset() {
+      state.principal = 10000000;
+      state.annualContribution = 0;
+      state.contributionYears = 20;
+      state.years = 75;
+      state.inflation = 2.5;
+      state.smoothingWeight = 80;
+      state.spendingRule = 'yale';
+      state.currencyMode = 'real';
+
+      document.getElementById('input-principal').value = state.principal;
+      document.getElementById('input-contribution').value = state.annualContribution;
+      document.getElementById('input-contrib-years').value = state.contributionYears;
+      document.getElementById('slider-years').value = state.years;
+      document.getElementById('slider-inflation').value = state.inflation;
+      document.getElementById('slider-smoothing').value = state.smoothingWeight;
+
+      setCurrencyMode('real');
+      setSpendingRule('yale');
+      applyPreset(state.activePreset);
+    }
+
+    function setPrincipal(amount) {
+      state.principal = amount;
+      document.getElementById('input-principal').value = amount;
+      recalculateAndRender();
+    }
+
+    function setCurrencyMode(mode) {
+      state.currencyMode = mode;
+      const btnReal = document.getElementById('btn-real');
+      const btnNom = document.getElementById('btn-nominal');
+
+      if (mode === 'real') {
+        btnReal.className = 'px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-white text-[#00356B] shadow-sm';
+        btnNom.className = 'px-3 py-1.5 text-xs font-medium rounded-md transition-all text-slate-300 hover:text-white';
+      } else {
+        btnNom.className = 'px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-white text-[#00356B] shadow-sm';
+        btnReal.className = 'px-3 py-1.5 text-xs font-medium rounded-md transition-all text-slate-300 hover:text-white';
+      }
+      recalculateAndRender();
+    }
+
+    function setSpendingRule(rule) {
+      state.spendingRule = rule;
+      const btnYale = document.getElementById('rule-yale');
+      const btnFixed = document.getElementById('rule-fixed');
+      const smoothingBox = document.getElementById('smoothing-control-box');
+
+      if (rule === 'yale') {
+        btnYale.className = 'p-2.5 rounded-lg border text-left transition-all bg-[#00356B]/5 border-[#00356B] text-[#00356B]';
+        btnFixed.className = 'p-2.5 rounded-lg border text-left transition-all bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+        smoothingBox.classList.remove('opacity-50', 'pointer-events-none');
+      } else {
+        btnFixed.className = 'p-2.5 rounded-lg border text-left transition-all bg-[#00356B]/5 border-[#00356B] text-[#00356B]';
+        btnYale.className = 'p-2.5 rounded-lg border text-left transition-all bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+        smoothingBox.classList.add('opacity-50', 'pointer-events-none');
+      }
+      recalculateAndRender();
+    }
+
+    function setChartView(view) {
+      state.chartView = view;
+      ['wealth', 'income', 'total'].forEach((v) => {
+        const el = document.getElementById(`chart-tab-${v}`);
+        if (v === view) {
+          el.className = 'px-3 py-1 text-xs font-semibold rounded-md bg-white text-[#00356B] shadow-sm transition-all';
+        } else {
+          el.className = 'px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition-all';
+        }
+      });
+      recalculateAndRender();
+    }
+
+    function setTableMode(mode) {
+      state.tableMode = mode;
+      const btnM = document.getElementById('table-mode-milestones');
+      const btnA = document.getElementById('table-mode-annual');
+      if (mode === 'milestones') {
+        btnM.className = 'px-2.5 py-1 text-xs font-semibold rounded-md bg-white text-[#00356B] shadow-sm';
+        btnA.className = 'px-2.5 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900';
+      } else {
+        btnA.className = 'px-2.5 py-1 text-xs font-semibold rounded-md bg-white text-[#00356B] shadow-sm';
+        btnM.className = 'px-2.5 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900';
+      }
+      recalculateAndRender();
+    }
+
+    function updateAssetWeight(index, rawValue) {
+      const val = Math.max(0, Math.min(100, Number(rawValue) || 0));
+      state.assets[index].weight = val;
+      renderAssetControls();
+      recalculateAndRender();
+    }
+
+    function updateAssetReturn(index, rawValue) {
+      const val = Math.max(-10, Math.min(40, Number(rawValue) || 0));
+      state.assets[index].expectedReturn = val;
+      recalculateAndRender();
+    }
+
+    function normalizeAllocations() {
+      const sum = state.assets.reduce((acc, a) => acc + Number(a.weight || 0), 0);
+      if (sum === 0) {
+        const equal = Math.floor(100 / state.assets.length);
+        state.assets.forEach((a, i) => {
+          a.weight = i === 0 ? 100 - equal * (state.assets.length - 1) : equal;
+        });
+      } else {
+        let running = 0;
+        state.assets.forEach((a, i) => {
+          if (i === state.assets.length - 1) {
+            a.weight = Math.max(0, Math.round(100 - running));
+          } else {
+            const scaled = Math.round((a.weight / sum) * 100);
+            a.weight = scaled;
+            running += scaled;
+          }
+        });
+      }
+      renderAssetControls();
+      recalculateAndRender();
+    }
+
+    function handleParamChange() {
+      state.principal = Math.max(0, Number(document.getElementById('input-principal').value) || 0);
+      state.annualContribution = Math.max(0, Number(document.getElementById('input-contribution').value) || 0);
+      state.contributionYears = Number(document.getElementById('input-contrib-years').value) || 0;
+      state.years = Number(document.getElementById('slider-years').value) || 75;
+      state.inflation = Number(document.getElementById('slider-inflation').value) || 0;
+      state.feeDrag = Number(document.getElementById('slider-drag').value) || 0;
+      state.spendingRate = Number(document.getElementById('slider-spending').value) || 0;
+      state.smoothingWeight = Number(document.getElementById('slider-smoothing').value) || 80;
+
+      recalculateAndRender();
+    }
+
+    // =========================================================================
+    // 6. FINANCIAL ENGINE: PORTFOLIO METRICS & MULTIGENERATIONAL SIMULATION
+    // =========================================================================
+    function computePortfolioStats() {
+      const totalWeight = state.assets.reduce((acc, a) => acc + a.weight, 0);
+      const normFactor = totalWeight > 0 ? totalWeight : 100;
+
+      let grossNominalReturn = 0;
+      let weightedVar = 0;
+
+      // Cross-asset average correlation assumption (~0.35 for diversified Yale endowment)
+      const avgCorrelation = state.activePreset === 'institutional' ? 0.32 : 0.42;
+
+      const attributions = state.assets.map((asset) => {
+        const w = asset.weight / normFactor;
+        const contrib = w * asset.expectedReturn;
+        grossNominalReturn += contrib;
+        return {
+          name: asset.shortName,
+          weight: asset.weight,
+          contribution: contrib,
+          color: asset.color,
+        };
+      });
+
+      // Portfolio variance calculation with pairwise diversification
+      for (let i = 0; i < state.assets.length; i++) {
+        for (let j = 0; j < state.assets.length; j++) {
+          const wi = state.assets[i].weight / normFactor;
+          const wj = state.assets[j].weight / normFactor;
+          const vi = state.assets[i].volatility;
+          const vj = state.assets[j].volatility;
+          const corr = i === j ? 1.0 : avgCorrelation;
+          weightedVar += wi * wj * vi * vj * corr;
+        }
+      }
+
+      const portfolioVolatility = Math.sqrt(Math.max(0, weightedVar));
+      const netNominalReturn = grossNominalReturn - state.feeDrag;
+      const netRealReturn = ((1 + netNominalReturn / 100) / (1 + state.inflation / 100) - 1) * 100;
+      const riskFreeRate = 3.8;
+      const sharpeRatio = portfolioVolatility > 0 ? (netNominalReturn - riskFreeRate) / portfolioVolatility : 0;
+
+      return {
+        grossNominalReturn,
+        netNominalReturn,
+        netRealReturn,
+        portfolioVolatility,
+        sharpeRatio,
+        attributions,
+      };
+    }
+
+    function runSimulation(netNominalReturnPct) {
+      const N = state.years;
+      const inf = state.inflation / 100;
+      const rNet = netNominalReturnPct / 100;
+      const spendRate = state.spendingRate / 100;
+      const wInertia = state.smoothingWeight / 100;
+
+      // Traditional 60/40 Benchmark assumptions: 7.2% gross nominal return, same fee drag & spending policy
+      const rBench = (7.2 - state.feeDrag) / 100;
+
+      const schedule = [];
+
+      let yaleNominal = state.principal;
+      let benchNominal = state.principal;
+      let inflationBaselineNominal = state.principal;
+
+      // Initial prior-year distribution baseline anchored at Year 0 target spending
+      let prevYaleDistNominal = state.principal * spendRate;
+      let prevBenchDistNominal = state.principal * spendRate;
+
+      let cumYaleDistReal = 0;
+      let cumYaleDistNominal = 0;
+      let cumBenchDistReal = 0;
+      let cumBenchDistNominal = 0;
+
+      // Record Year 0
+      schedule.push({
+        year: 0,
+        generation: getGenerationLabel(0),
+        deflator: 1,
+        startNominal: state.principal,
+        startReal: state.principal,
+        growthNominal: 0,
+        growthReal: 0,
+        distNominal: 0,
+        distReal: 0,
+        endNominal: state.principal,
+        endReal: state.principal,
+        benchEndNominal: state.principal,
+        benchEndReal: state.principal,
+        inflationBaselineNominal: state.principal,
+        inflationBaselineReal: state.principal,
+        cumDistNominal: 0,
+        cumDistReal: 0,
+      });
+
+      for (let t = 1; t <= N; t++) {
+        const deflator = Math.pow(1 + inf, t);
+
+        // Optional First-Generation Annual Contribution (inflation-indexed so real effort stays consistent)
+        const contribNominal =
+          t <= state.contributionYears ? state.annualContribution * Math.pow(1 + inf, t - 1) : 0;
+
+        const startYaleNom = yaleNominal + contribNominal;
+        const startBenchNom = benchNominal + contribNominal;
+
+        // Investment Growth before distribution
+        const yaleGrowthNom = startYaleNom * rNet;
+        const benchGrowthNom = startBenchNom * rBench;
+
+        const yalePreDistNom = startYaleNom + yaleGrowthNom;
+        const benchPreDistNom = startBenchNom + benchGrowthNom;
+
+        // Calculate Annual Distribution (Yale Hybrid Smoothing vs Fixed %)
+        let yaleDistNom = 0;
+        let benchDistNom = 0;
+
+        if (spendRate > 0) {
+          if (state.spendingRule === 'yale') {
+            // Yale Formula: w * (Prior Distribution * (1 + inflation)) + (1 - w) * (Target Rate * Current Value)
+            yaleDistNom =
+              wInertia * (prevYaleDistNominal * (1 + inf)) + (1 - wInertia) * (spendRate * yalePreDistNom);
+            benchDistNom =
+              wInertia * (prevBenchDistNominal * (1 + inf)) + (1 - wInertia) * (spendRate * benchPreDistNom);
+          } else {
+            // Fixed % of current endowment value
+            yaleDistNom = spendRate * yalePreDistNom;
+            benchDistNom = spendRate * benchPreDistNom;
+          }
+        }
+
+        // Prevent distribution from exceeding available capital
+        yaleDistNom = Math.min(yalePreDistNom, Math.max(0, yaleDistNom));
+        benchDistNom = Math.min(benchPreDistNom, Math.max(0, benchDistNom));
+
+        prevYaleDistNominal = yaleDistNom;
+        prevBenchDistNominal = benchDistNom;
+
+        yaleNominal = Math.max(0, yalePreDistNom - yaleDistNom);
+        benchNominal = Math.max(0, benchPreDistNom - benchDistNom);
+        inflationBaselineNominal = state.principal * deflator;
+
+        const yaleDistReal = yaleDistNom / deflator;
+        const benchDistReal = benchDistNom / deflator;
+
+        cumYaleDistNominal += yaleDistNom;
+        cumYaleDistReal += yaleDistReal;
+        cumBenchDistNominal += benchDistNom;
+        cumBenchDistReal += benchDistReal;
+
+        schedule.push({
+          year: t,
+          generation: getGenerationLabel(t),
+          deflator,
+          startNominal: startYaleNom,
+          startReal: startYaleNom / Math.pow(1 + inf, t - 1),
+          growthNominal: yaleGrowthNom,
+          growthReal: yaleGrowthNom / deflator,
+          distNominal: yaleDistNom,
+          distReal: yaleDistReal,
+          endNominal: yaleNominal,
+          endReal: yaleNominal / deflator,
+          benchEndNominal: benchNominal,
+          benchEndReal: benchNominal / deflator,
+          inflationBaselineNominal,
+          inflationBaselineReal: state.principal,
+          cumDistNominal: cumYaleDistNominal,
+          cumDistReal: cumYaleDistReal,
+        });
+      }
+
+      return {
+        schedule,
+        finalRow: schedule[schedule.length - 1],
+        cumYaleDistNominal,
+        cumYaleDistReal,
+        cumBenchDistNominal,
+        cumBenchDistReal,
+      };
+    }
+
+    // =========================================================================
+    // 7. UPDATE DOM KPI CARDS, CHARTS & TABLES
+    // =========================================================================
+    function recalculateAndRender() {
+      // Sync control labels
+      document.getElementById('label-principal').textContent = formatCurrency(state.principal);
+      document.getElementById('label-contribution').textContent = `${formatCurrency(state.annualContribution)} / yr`;
+      document.getElementById('label-years').textContent = `${state.years} Years`;
+      document.getElementById('label-inflation').textContent = `${state.inflation.toFixed(1)}%`;
+      document.getElementById('label-drag').textContent = `${state.feeDrag.toFixed(2)}%`;
+      document.getElementById('label-spending').textContent = `${state.spendingRate.toFixed(2)}%`;
+      document.getElementById('label-smoothing').textContent = `${state.smoothingWeight}% Inertia / ${
+        100 - state.smoothingWeight
+      }% Market`;
+
+      const numGens = Math.max(1, Math.ceil(state.years / 25));
+      document.getElementById('gen-badge').textContent = `${numGens} Generation${numGens > 1 ? 's' : ''}`;
+      document.getElementById('kpi-horizon-tag').textContent = `Yr ${state.years}`;
+
+      // Run calculations
+      const stats = computePortfolioStats();
+      const sim = runSimulation(stats.netNominalReturn);
+      const final = sim.finalRow;
+
+      const isReal = state.currencyMode === 'real';
+
+      // KPI 1: Ending Endowment
+      const endingPrimary = isReal ? final.endReal : final.endNominal;
+      const endingSecondary = isReal
+        ? `Nominal: ${formatCurrency(final.endNominal, true)}`
+        : `Real (Today's $): ${formatCurrency(final.endReal, true)}`;
+
+      document.getElementById('kpi-ending-wealth').textContent = formatCurrency(endingPrimary, true);
+      document.getElementById('kpi-ending-sub').textContent = endingSecondary;
+
+      // KPI 2: Cumulative Distributions
+      const cumDistPrimary = isReal ? sim.cumYaleDistReal : sim.cumYaleDistNominal;
+      const finalDistPrimary = isReal ? final.distReal : final.distNominal;
+      document.getElementById('kpi-total-distributions').textContent = formatCurrency(cumDistPrimary, true);
+      document.getElementById('kpi-final-distribution').textContent = `Yr ${state.years} Payout: ${formatCurrency(
+        finalDistPrimary,
+        true
+      )}/yr`;
+
+      // KPI 3: Expected Return & Risk
+      document.getElementById('kpi-nominal-return').textContent = `${stats.netNominalReturn.toFixed(2)}%`;
+      document.getElementById('kpi-real-return').textContent = `${
+        stats.netRealReturn >= 0 ? '+' : ''
+      }${stats.netRealReturn.toFixed(2)}% Real`;
+      document.getElementById('kpi-volatility').textContent = `Vol: ${stats.portfolioVolatility.toFixed(
+        1
+      )}% | Sharpe: ${stats.sharpeRatio.toFixed(2)}`;
+      document.getElementById('total-attribution-label').textContent = `Gross: ${stats.grossNominalReturn.toFixed(
+        2
+      )}% | Net: ${stats.netNominalReturn.toFixed(2)}%`;
+
+      // KPI 4: Purchasing Power Preservation Ratio
+      const preservationRatio = state.principal > 0 ? final.endReal / state.principal : 0;
+      const alphaVsBench = isReal
+        ? final.endReal - final.benchEndReal
+        : final.endNominal - final.benchEndNominal;
+
+      document.getElementById('kpi-preservation-ratio').textContent = `${preservationRatio.toFixed(2)}x`;
+      const statusBadge = document.getElementById('kpi-status-badge');
+      if (preservationRatio >= 1.0) {
+        statusBadge.textContent = 'Perpetual Growth';
+        statusBadge.className = 'text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700';
+      } else if (preservationRatio >= 0.7) {
+        statusBadge.textContent = 'Gradual Drawdown';
+        statusBadge.className = 'text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700';
+      } else {
+        statusBadge.textContent = 'Principal Erosion';
+        statusBadge.className = 'text-[10px] font-semibold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700';
+      }
+
+      const alphaEl = document.getElementById('kpi-alpha-vs-6040');
+      alphaEl.textContent = `${alphaVsBench >= 0 ? '+' : ''}${formatCurrency(alphaVsBench, true)} vs. 60/40`;
+      alphaEl.className = `text-[11px] font-medium mt-1 tabular-nums ${
+        alphaVsBench >= 0 ? 'text-emerald-700' : 'text-rose-600'
+      }`;
+
+      // Update Generational Milestone Strip
+      renderMilestoneStrip(sim.schedule);
+
+      // Update Charts
+      updateTrajectoryChart(sim.schedule);
+      updateAllocationDonut();
+      updateAttributionBar(stats.attributions);
+
+      // Update Table
+      renderLedgerTable(sim.schedule);
+    }
+
+    function renderMilestoneStrip(schedule) {
+      const strip = document.getElementById('milestone-strip');
+      const milestoneYears = [25, 50, 75, 100].filter((y) => y <= state.years);
+      if (milestoneYears.length === 0) {
+        milestoneYears.push(state.years);
+      }
+
+      const isReal = state.currencyMode === 'real';
+
+      strip.innerHTML = milestoneYears
+        .map((yr, idx) => {
+          const row = schedule[yr];
+          if (!row) return '';
+          const val = isReal ? row.endReal : row.endNominal;
+          const dist = isReal ? row.distReal : row.distNominal;
+          return `
+            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70">
+              <div class="flex items-center justify-between text-[11px] font-semibold text-[#00356B]">
+                <span>Gen ${idx + 1} • Year ${yr}</span>
+                <span class="text-[10px] text-slate-400 font-normal">${isReal ? 'Real' : 'Nom'}</span>
+              </div>
+              <div class="text-sm sm:text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                ${formatCurrency(val, true)}
+              </div>
+              <div class="text-[11px] text-[#B45309] tabular-nums">
+                Payout: ${formatCurrency(dist, true)}/yr
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    // =========================================================================
+    // 8. CHART.JS VISUALIZATIONS
+    // =========================================================================
+    function updateTrajectoryChart(schedule) {
+      const ctx = document.getElementById('trajectoryChart').getContext('2d');
+      const isReal = state.currencyMode === 'real';
+
+      const labels = schedule.map((r) => `Yr ${r.year}`);
+      let datasets = [];
+
+      if (state.chartView === 'wealth') {
+        datasets = [
+          {
+            label: 'Yale Endowment Portfolio',
+            data: schedule.map((r) => (isReal ? r.endReal : r.endNominal)),
+            borderColor: '#00356B',
+            backgroundColor: 'rgba(0, 53, 107, 0.09)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.25,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+          },
+          {
+            label: 'Traditional 60/40 Benchmark',
+            data: schedule.map((r) => (isReal ? r.benchEndReal : r.benchEndNominal)),
+            borderColor: '#B45309',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            fill: false,
+            tension: 0.25,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          },
+          {
+            label: isReal ? 'Initial Principal (Inflation-Adjusted)' : 'Inflation-Adjusted Principal Baseline',
+            data: schedule.map((r) => (isReal ? r.inflationBaselineReal : r.inflationBaselineNominal)),
+            borderColor: '#94A3B8',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [2, 3],
+            fill: false,
+            tension: 0,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+          },
+        ];
+      } else if (state.chartView === 'income') {
+        datasets = [
+          {
+            type: 'bar',
+            label: `Annual Family Distribution (${state.spendingRule === 'yale' ? 'Yale Smoothed' : 'Fixed %'})`,
+            data: schedule.map((r) => (isReal ? r.distReal : r.distNominal)),
+            backgroundColor: 'rgba(0, 53, 107, 0.82)',
+            borderRadius: 3,
+          },
+          {
+            type: 'line',
+            label: 'Target Spending % of Ending Balance',
+            data: schedule.map((r) =>
+              (isReal ? r.endReal : r.endNominal) * (state.spendingRate / 100)
+            ),
+            borderColor: '#D97706',
+            borderWidth: 2,
+            borderDash: [4, 4],
+            pointRadius: 0,
+            tension: 0.25,
+          },
+        ];
+      } else {
+        // Total Wealth Created = Ending Principal + Cumulative Distributions Paid
+        datasets = [
+          {
+            label: 'Yale Total Wealth (Endowment + Cum. Payouts)',
+            data: schedule.map((r) =>
+              isReal ? r.endReal + r.cumDistReal : r.endNominal + r.cumDistNominal
+            ),
+            borderColor: '#00356B',
+            backgroundColor: 'rgba(0, 53, 107, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.25,
+            pointRadius: 0,
+          },
+          {
+            label: 'Ending Endowment Corpus Only',
+            data: schedule.map((r) => (isReal ? r.endReal : r.endNominal)),
+            borderColor: '#0D9488',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.25,
+            pointRadius: 0,
+          },
+          {
+            label: 'Cumulative Distributions Paid',
+            data: schedule.map((r) => (isReal ? r.cumDistReal : r.cumDistNominal)),
+            borderColor: '#B45309',
+            borderWidth: 2,
+            borderDash: [5, 3],
+            fill: false,
+            tension: 0.25,
+            pointRadius: 0,
+          },
+        ];
+      }
+
+      if (trajectoryChart) {
+        trajectoryChart.destroy();
+      }
+
+      trajectoryChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              align: 'start',
+              labels: {
+                usePointStyle: true,
+                boxWidth: 8,
+                font: { family: 'Inter', size: 11, weight: '500' },
+                color: '#334155',
+              },
+            },
+            tooltip: {
+              backgroundColor: '#0F172A',
+              titleFont: { family: 'Inter', size: 12, weight: '600' },
+              bodyFont: { family: 'Inter', size: 12 },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                title: (items) => {
+                  const idx = items[0].dataIndex;
+                  return `Year ${idx} • ${getGenerationLabel(idx)}`;
+                },
+                label: (context) => {
+                  return ` ${context.dataset.label}: ${formatCurrency(context.parsed.y, true)}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxTicksLimit: 11,
+                font: { family: 'Inter', size: 11 },
+                color: '#64748B',
+              },
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: '#F1F5F9' },
+              ticks: {
+                font: { family: 'Inter', size: 11 },
+                color: '#64748B',
+                callback: (val) => formatCurrency(val, true),
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function updateAllocationDonut() {
+      const ctx = document.getElementById('allocationDonutChart').getContext('2d');
+      const activeAssets = state.assets.filter((a) => a.weight > 0);
+
+      if (allocationDonutChart) {
+        allocationDonutChart.destroy();
+      }
+
+      allocationDonutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: activeAssets.map((a) => a.shortName),
+          datasets: [
+            {
+              data: activeAssets.map((a) => a.weight),
+              backgroundColor: activeAssets.map((a) => a.color),
+              borderColor: '#FFFFFF',
+              borderWidth: 2,
+              hoverOffset: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 10,
+                padding: 10,
+                font: { family: 'Inter', size: 11 },
+                color: '#334155',
+              },
+            },
+            tooltip: {
+              backgroundColor: '#0F172A',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => ` ${ctx.label}: ${ctx.parsed}%`,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function updateAttributionBar(attributions) {
+      const ctx = document.getElementById('attributionBarChart').getContext('2d');
+      const sorted = [...attributions].sort((a, b) => b.contribution - a.contribution);
+
+      if (attributionBarChart) {
+        attributionBarChart.destroy();
+      }
+
+      attributionBarChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sorted.map((a) => a.name),
+          datasets: [
+            {
+              label: 'Return Contribution (%)',
+              data: sorted.map((a) => Number(a.contribution.toFixed(2))),
+              backgroundColor: sorted.map((a) => a.color),
+              borderRadius: 4,
+              barThickness: 18,
+            },
+          ],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0F172A',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => ` +${ctx.parsed.x.toFixed(2)}% annual return contribution`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: { color: '#F1F5F9' },
+              ticks: {
+                font: { family: 'Inter', size: 11 },
+                color: '#64748B',
+                callback: (v) => `${v}%`,
+              },
+            },
+            y: {
+              grid: { display: false },
+              ticks: {
+                font: { family: 'Inter', size: 11, weight: '500' },
+                color: '#334155',
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // =========================================================================
+    // 9. GENERATIONAL LEDGER TABLE RENDERING
+    // =========================================================================
+    function renderLedgerTable(schedule) {
+      const tbody = document.getElementById('ledger-table-body');
+      const isReal = state.currencyMode === 'real';
+
+      const rows = schedule.filter((r) => {
+        if (state.tableMode === 'annual') return true;
+        return r.year === 0 || r.year % 5 === 0 || r.year === state.years;
+      });
+
+      tbody.innerHTML = rows
+        .map((r) => {
+          const isGenMilestone = r.year > 0 && r.year % 25 === 0;
+          const rowClass = isGenMilestone
+            ? 'bg-amber-50/60 font-medium'
+            : 'hover:bg-slate-50/80';
+
+          const startVal = isReal ? r.startReal : r.startNominal;
+          const growthVal = isReal ? r.growthReal : r.growthNominal;
+          const distVal = isReal ? r.distReal : r.distNominal;
+          const endVal = isReal ? r.endReal : r.endNominal;
+          const benchVal = isReal ? r.benchEndReal : r.benchEndNominal;
+
+          return `
+            <tr class="${rowClass}">
+              <td class="py-2.5 px-4">
+                <div class="font-semibold text-slate-900">Year ${r.year}</div>
+                <div class="text-[11px] ${isGenMilestone ? 'text-[#B45309] font-semibold' : 'text-slate-400'}">
+                  ${r.generation}
+                </div>
+              </td>
+              <td class="py-2.5 px-4 text-right text-slate-700">${formatCurrency(startVal, true)}</td>
+              <td class="py-2.5 px-4 text-right text-emerald-700">+${formatCurrency(growthVal, true)}</td>
+              <td class="py-2.5 px-4 text-right text-[#B45309] font-medium">
+                ${r.year === 0 ? '—' : formatCurrency(distVal, true)}
+              </td>
+              <td class="py-2.5 px-4 text-right font-bold text-[#00356B]">${formatCurrency(endVal, true)}</td>
+              <td class="py-2.5 px-4 text-right text-slate-500">${formatCurrency(benchVal, true)}</td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    // =========================================================================
+    // 10. INITIALIZATION ON WINDOW LOAD
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAssetControls();
+      recalculateAndRender();
+    });
+  </script>
+</body>
+</html>
